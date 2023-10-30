@@ -1,10 +1,9 @@
-package table_test
+package table
 
 import (
 	"testing"
 	"time"
 
-	"github.com/rileyr/table"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,10 +17,10 @@ func TestHelper(t *testing.T) {
 		Hello     any       `db:"there"`
 	}
 
-	helper := table.NewHelper(
+	helper := newHelper(
 		foo{},
-		table.WithDBGeneratedField("id"),
-		table.WithDBGeneratedField("created"),
+		WithDBGeneratedField("id"),
+		WithDBGeneratedField("created"),
 	)
 
 	assert.NotNil(t, helper)

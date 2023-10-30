@@ -11,14 +11,14 @@ type Table[T any] struct {
 	name string
 	pk   string
 
-	helper *Helper
+	helper *helper
 }
 
 // New returns a new Table for the given type.
-func New[T any](name, pk string, opts ...HelperOption) *Table[T] {
+func New[T any](name, pk string, opts ...Option) *Table[T] {
 	var t T
 	return &Table[T]{
-		helper: NewHelper(t, opts...),
+		helper: newHelper(t, opts...),
 		name:   name,
 		pk:     pk,
 	}

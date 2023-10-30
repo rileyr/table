@@ -7,7 +7,7 @@ import (
 	"github.com/fatih/structs"
 )
 
-type Helper struct {
+type helper struct {
 	All          string
 	Inserts      string
 	InsertFields string
@@ -17,8 +17,8 @@ type Helper struct {
 	dbGeneratedFields []string
 }
 
-func NewHelper(obj any, opts ...HelperOption) *Helper {
-	c := Helper{}
+func newHelper(obj any, opts ...Option) *helper {
+	c := helper{}
 	for _, opt := range opts {
 		opt(&c)
 	}
@@ -64,12 +64,4 @@ func NewHelper(obj any, opts ...HelperOption) *Helper {
 	c.UpdateValues = strings.Join(ufs, ", ")
 	c.Returning = strings.Join(c.dbGeneratedFields, ", ")
 	return &c
-}
-
-type HelperOption func(*Helper)
-
-func WithDBGeneratedField(col string) HelperOption {
-	return func(c *Helper) {
-		c.dbGeneratedFields = append(c.dbGeneratedFields, col)
-	}
 }
