@@ -1,6 +1,7 @@
 package table_test
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -28,6 +29,8 @@ func TestTable(t *testing.T) {
 		table.WithDBGeneratedField("updated_at"),
 	)
 
+	ctx := context.Background()
+
 	t.Run("Fetch", func(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		if err != nil {
@@ -46,7 +49,7 @@ func TestTable(t *testing.T) {
 			WithArgs("foobar").
 			WillReturnRows(rows)
 
-		result, err := subject.Fetch(db, "username", "foobar")
+		result, err := subject.Fetch(ctx, db, "username", "foobar")
 
 		assert.NoError(t, err)
 		assert.NoError(t, mock.ExpectationsWereMet())
@@ -74,7 +77,7 @@ func TestTable(t *testing.T) {
 			ExpectQuery("SELECT created_at, email, id, updated_at, username FROM users WHERE username IS NULL").
 			WillReturnRows(rows)
 
-		result, err := subject.Select(db, "username IS NULL")
+		result, err := subject.Select(ctx, db, "username IS NULL")
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
@@ -108,7 +111,7 @@ func TestTable(t *testing.T) {
 			Email:    "email@test.com",
 		}
 
-		assert.NoError(t, subject.Insert(db, &obj))
+		assert.NoError(t, subject.Insert(ctx, db, &obj))
 		assert.NoError(t, err)
 		assert.NoError(t, mock.ExpectationsWereMet())
 		assert.Equal(t, 40, obj.ID)
@@ -133,7 +136,7 @@ func TestTable(t *testing.T) {
 			WillReturnRows(rows)
 
 		user := user{Username: "newname", Email: "newemail@test.com", ID: 40}
-		assert.NoError(t, subject.Replace(db, &user))
+		assert.NoError(t, subject.Replace(ctx, db, &user))
 		assert.NoError(t, mock.ExpectationsWereMet())
 		assert.Equal(t, updated.Time.String(), user.UpdatedAt.Time.String())
 	})
@@ -150,7 +153,7 @@ func TestTable(t *testing.T) {
 			ExpectExec("DELETE FROM users WHERE email = ?").
 			WithArgs("email@test.com").WillReturnResult(sqlmock.NewResult(0, 55))
 
-		count, err := subject.Delete(db, "email = ?", "email@test.com")
+		count, err := subject.Delete(ctx, db, "email = ?", "email@test.com")
 		assert.NoError(t, err)
 		assert.NoError(t, mock.ExpectationsWereMet())
 		assert.Equal(t, int64(55), count)

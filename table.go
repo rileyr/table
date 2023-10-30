@@ -1,6 +1,8 @@
 package table
 
 import (
+	"context"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -24,9 +26,9 @@ func New[T any](name, pk string, opts ...HelperOption) *Table[T] {
 
 // Fetch returns a single record with a value matching a given field. Mostly
 // useful for fetching by unique values.
-func (t *Table[T]) Fetch(db *sqlx.DB, col string, val any) (*T, error) {
+func (t *Table[T]) Fetch(ctx context.Context, db *sqlx.DB, col string, val any) (*T, error) {
 	q := "SELECT " + t.helper.All + " FROM " + t.name + " WHERE " + col + " = ?"
-	rows, err := db.Queryx(q, val)
+	rows, err := db.QueryxContext(ctx, q, val)
 	if err != nil {
 		return nil, err
 	}
@@ -43,9 +45,9 @@ func (t *Table[T]) Fetch(db *sqlx.DB, col string, val any) (*T, error) {
 }
 
 // Select fetches all records matching a given query.
-func (t *Table[T]) Select(db *sqlx.DB, query string, args ...any) ([]*T, error) {
+func (t *Table[T]) Select(ctx context.Context, db *sqlx.DB, query string, args ...any) ([]*T, error) {
 	q := "SELECT " + t.helper.All + " FROM " + t.name + " WHERE " + query
-	rows, err := db.Queryx(q, args...)
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,10 +66,10 @@ func (t *Table[T]) Select(db *sqlx.DB, query string, args ...any) ([]*T, error) 
 }
 
 // Insert inserts a single record into the table.
-func (t *Table[T]) Insert(db *sqlx.DB, obj *T) error {
+func (t *Table[T]) Insert(ctx context.Context, db *sqlx.DB, obj *T) error {
 	h := t.helper
 	q := "INSERT INTO " + t.name + "(" + h.Inserts + ") VALUES (" + h.InsertFields + ") RETURNING " + h.Returning
-	rows, err := db.NamedQuery(q, obj)
+	rows, err := db.NamedQueryContext(ctx, q, obj)
 	if err != nil {
 		return err
 	}
@@ -84,9 +86,9 @@ func (t *Table[T]) Insert(db *sqlx.DB, obj *T) error {
 }
 
 // Replace replaces the given record.
-func (t *Table[T]) Replace(db *sqlx.DB, obj *T) error {
+func (t *Table[T]) Replace(ctx context.Context, db *sqlx.DB, obj *T) error {
 	q := "UPDATE " + t.name + " SET " + t.helper.UpdateValues + " WHERE " + t.pk + " = :" + t.pk + " RETURNING " + t.helper.Returning
-	rows, err := db.NamedQuery(q, obj)
+	rows, err := db.NamedQueryContext(ctx, q, obj)
 	if err != nil {
 		return err
 	}
@@ -103,9 +105,9 @@ func (t *Table[T]) Replace(db *sqlx.DB, obj *T) error {
 }
 
 // Delete deletes records matching the query.
-func (t *Table[T]) Delete(db *sqlx.DB, query string, args ...any) (int64, error) {
+func (t *Table[T]) Delete(ctx context.Context, db *sqlx.DB, query string, args ...any) (int64, error) {
 	q := "DELETE FROM " + t.name + " WHERE " + query
-	res, err := db.Exec(q, args...)
+	res, err := db.ExecContext(ctx, q, args...)
 	if err != nil {
 		return 0, err
 	}
