@@ -1,8 +1,6 @@
 package table
 
 import (
-	"sync"
-
 	"github.com/jmoiron/sqlx"
 )
 
@@ -11,24 +9,23 @@ type Table[T any] struct {
 	name string
 	pk   string
 
-	helperOnce sync.Once
-	helper     *Helper
-	helperOpts []HelperOption
+	helper *Helper
 }
 
 // New returns a new Table for the given type.
 func New[T any](name, pk string, opts ...HelperOption) *Table[T] {
+	var t T
 	return &Table[T]{
-		name:       name,
-		helperOpts: opts,
-		pk:         pk,
+		helper: NewHelper(t, opts...),
+		name:   name,
+		pk:     pk,
 	}
 }
 
 // Fetch returns a single record with a value matching a given field. Mostly
 // useful for fetching by unique values.
 func (t *Table[T]) Fetch(db *sqlx.DB, col string, val any) (*T, error) {
-	q := "SELECT " + t.getHelper().All + " FROM " + t.name + " WHERE " + col + " = ?"
+	q := "SELECT " + t.helper.All + " FROM " + t.name + " WHERE " + col + " = ?"
 	rows, err := db.Queryx(q, val)
 	if err != nil {
 		return nil, err
@@ -47,7 +44,7 @@ func (t *Table[T]) Fetch(db *sqlx.DB, col string, val any) (*T, error) {
 
 // Select fetches all records matching a given query.
 func (t *Table[T]) Select(db *sqlx.DB, query string, args ...any) ([]*T, error) {
-	q := "SELECT " + t.getHelper().All + " FROM " + t.name + " WHERE " + query
+	q := "SELECT " + t.helper.All + " FROM " + t.name + " WHERE " + query
 	rows, err := db.Queryx(q, args...)
 	if err != nil {
 		return nil, err
@@ -68,7 +65,7 @@ func (t *Table[T]) Select(db *sqlx.DB, query string, args ...any) ([]*T, error) 
 
 // Insert inserts a single record into the table.
 func (t *Table[T]) Insert(db *sqlx.DB, obj *T) error {
-	h := t.getHelper()
+	h := t.helper
 	q := "INSERT INTO " + t.name + "(" + h.Inserts + ") VALUES (" + h.InsertFields + ") RETURNING " + h.Returning
 	rows, err := db.NamedQuery(q, obj)
 	if err != nil {
@@ -88,7 +85,7 @@ func (t *Table[T]) Insert(db *sqlx.DB, obj *T) error {
 
 // Replace replaces the given record.
 func (t *Table[T]) Replace(db *sqlx.DB, obj *T) error {
-	q := "UPDATE " + t.name + " SET " + t.getHelper().UpdateValues + " WHERE " + t.pk + " = :" + t.pk + " RETURNING " + t.getHelper().Returning
+	q := "UPDATE " + t.name + " SET " + t.helper.UpdateValues + " WHERE " + t.pk + " = :" + t.pk + " RETURNING " + t.helper.Returning
 	rows, err := db.NamedQuery(q, obj)
 	if err != nil {
 		return err
@@ -113,12 +110,4 @@ func (t *Table[T]) Delete(db *sqlx.DB, query string, args ...any) (int64, error)
 		return 0, err
 	}
 	return res.RowsAffected()
-}
-
-func (t *Table[T]) getHelper() *Helper {
-	t.helperOnce.Do(func() {
-		var obj T
-		t.helper = NewHelper(obj, t.helperOpts...)
-	})
-	return t.helper
 }
