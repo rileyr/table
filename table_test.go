@@ -31,6 +31,31 @@ func TestTable(t *testing.T) {
 
 	ctx := context.Background()
 
+	t.Run("Find", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer mockDB.Close()
+		db := sqlx.NewDb(mockDB, "sqlmock")
+
+		now := sql.NullTime{Time: time.Now(), Valid: true}
+		rows := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "username", "email"}).AddRow(
+			12345, now, now, "foobar", "foo@bar.bar",
+		)
+
+		mock.
+			ExpectQuery("SELECT created_at, email, id, updated_at, username FROM users WHERE id = ?").
+			WithArgs(12345).
+			WillReturnRows(rows)
+
+		result, err := subject.Find(ctx, db, 12345)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, "foobar", result.Username)
+	})
+
 	t.Run("Fetch", func(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		if err != nil {

@@ -24,6 +24,11 @@ func New[T any](name, pk string, opts ...Option) *Table[T] {
 	}
 }
 
+// Find returns a single record with a value matching a given pk.
+func (t *Table[T]) Find(ctx context.Context, db *sqlx.DB, id any) (*T, error) {
+	return t.Fetch(ctx, db, t.pk, id)
+}
+
 // Fetch returns a single record with a value matching a given field. Mostly
 // useful for fetching by unique values.
 func (t *Table[T]) Fetch(ctx context.Context, db *sqlx.DB, col string, val any) (*T, error) {
